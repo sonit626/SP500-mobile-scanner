@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101827">
+<meta name="description" content="Lokale S&P 500 swing-trade scanner">
+<link rel="manifest" href="manifest.webmanifest">
+<title>S&P 500 Swing Scanner</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#121d2e;--muted:#91a1b8;--line:#26364d;--green:#42d392;--red:#ff7272;--blue:#70a7ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#edf3fb;font:15px system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:980px;margin:auto;padding:18px 14px 40px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 0 18px}
+h1{font-size:22px;margin:0}h2{font-size:17px;margin:0 0 12px}
+small,.muted{color:var(--muted)}.pill{font-size:12px;padding:5px 9px;border:1px solid var(--line);border-radius:30px;color:var(--muted)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:15px;margin:12px 0}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.stat{background:#0d1726;border:1px solid var(--line);border-radius:12px;padding:11px}.stat b{display:block;font-size:22px}
+button{border:0;border-radius:12px;padding:13px 15px;font-weight:700;font-size:14px;cursor:pointer}
+.primary{background:var(--green);color:#062217;width:100%}.secondary{background:#26364d;color:#edf3fb;width:100%;margin-top:9px}
+button:disabled{opacity:.45;cursor:wait}.progress{height:8px;background:#26364d;border-radius:20px;overflow:hidden;margin:10px 0}.bar{height:100%;width:0;background:var(--green);transition:width .2s}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:center}.status{font-size:13px;color:var(--muted);margin-top:8px;min-height:20px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:10px 7px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--muted);font-weight:600}
+tbody tr{cursor:pointer}tbody tr:active{background:#20304a}.score{font-weight:800;color:var(--green)}.negative{color:var(--red)}
+#resultsWrap{overflow-x:auto}.tag{display:inline-block;padding:3px 7px;border-radius:6px;background:#1d3b33;color:var(--green);font-size:11px}
+#details{display:none}.detailgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.detail{background:#0d1726;padding:10px;border-radius:10px}.detail span{display:block;color:var(--muted);font-size:12px}
+.note{font-size:12px;line-height:1.5;color:var(--muted)}.warning{color:#ffd27b}
+@media(min-width:700px){main{padding:28px}.stats{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<main>
+<header><div><h1>📈 S&P 500 Swing Scanner</h1><small>Lokale analyse op je gsm</small></div><span class="pill" id="cachePill">Nog niet gescand</span></header>
+<section class="panel">
+ <div class="row"><h2>Dagelijkse scan</h2><span class="pill">3–10 handelsdagen</span></div>
+ <div class="stats">
+  <div class="stat"><small>Aandelen</small><b id="universe">500</b></div>
+  <div class="stat"><small>Laatste scan</small><b id="lastScan" style="font-size:15px">—</b></div>
+  <div class="stat"><small>Kandidaten</small><b id="candidateCount">—</b></div>
+ </div>
+ <div class="progress"><div class="bar" id="bar"></div></div>
+ <div class="status" id="status">Open de app. De eerste keer van de dag wordt automatisch een scan gestart.</div>
+ <button class="primary" id="updateBtn">Update opnieuw uitvoeren</button>
+ <div class="note" style="margin-top:10px">Bij de eerste opening van een nieuwe dag wordt automatisch bijgewerkt. Daarna gebruikt de app de opgeslagen resultaten. De knop hierboven forceert een nieuwe scan.</div>
+</section>
+<section class="panel">
+ <div class="row"><h2>Beste bullish kandidaten</h2><span class="pill" id="updatedLabel">Geen data</span></div>
+ <div id="resultsWrap"><table><thead><tr><th>#</th><th>Aandeel</th><th>Score</th><th>Laatste koers</th><th>5d</th><th>20d</th></tr></thead><tbody id="results"><tr><td colspan="6" class="muted">Nog geen scanresultaten.</td></tr></tbody></table></div>
+</section>
+<section class="panel" id="details">
+ <div class="row"><h2 id="detailTitle">Aandeel</h2><span class="pill" id="detailScore">Score —</span></div>
+ <div class="detailgrid">
+  <div class="detail"><span>Indicatieve instap</span><b id="entry">—</b></div>
+  <div class="detail"><span>Stop-loss</span><b id="stop">—</b></div>
+  <div class="detail"><span>Doel (2R)</span><b id="target">—</b></div>
+  <div class="detail"><span>Trend</span><b id="trend">—</b></div>
+  <div class="detail"><span>RSI (14)</span><b id="rsi">—</b></div>
+  <div class="detail"><span>20-daagse volatiliteit</span><b id="vol">—</b></div>
+ </div>
+ <p class="note">Dit zijn technische indicaties, geen koopadvies. Koersen kunnen vertraagd zijn. Controleer altijd de actuele koers en eventuele bedrijfsresultaten voor je een order plaatst.</p>
+</section>
+<section class="panel">
+ <h2>Instellingen & gegevens</h2>
+ <div class="row"><span class="muted">Lokale opslag</span><b id="storageState">Actief</b></div>
+ <div class="row" style="margin-top:8px"><span class="muted">Gegevensbron</span><b>Yahoo Finance chart</b></div>
+ <p class="note warning">De beursgegevens worden via een gratis publieke proxy opgehaald. Yahoo Finance is geen officiële, gegarandeerde API; de dienst kan tijdelijk weigeren of wijzigen. Er is geen betaalde API-sleutel nodig.</p>
+ <button class="secondary" id="clearBtn">Lokale scanresultaten wissen</button>
+</section>
+<p class="note">De app bewaart scanresultaten op dit toestel. Wis je browsergegevens of gebruik je een andere browser, dan kunnen de opgeslagen resultaten verdwijnen. De app voert geen transacties uit.</p>
+</main>
+<script>
+const CACHE_KEY='sp500_swing_scan_v1';
+const SYMBOLS_URL='https://raw.githubusercontent.com/datasets/s-and-p-500-companies/master/data/constituents.csv';
+const PROXY='https://proxy.cors.dev/';
+const $=id=>document.getElementById(id);
+let rows=[];
+
+function localDayKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function money(n){return Number.isFinite(n)?'$'+n.toFixed(2):'—';}
+function pct(n){return Number.isFinite(n)?(n>=0?'+':'')+n.toFixed(1)+'%':'—';}
+function loadCache(){try{return JSON.parse(localStorage.getItem(CACHE_KEY)||'null')}catch{return null}}
+function saveCache(data){localStorage.setItem(CACHE_KEY,JSON.stringify(data))}
+function setStatus(t){$('status').textContent=t}
+function setProgress(n){$('bar').style.width=Math.max(0,Math.min(100,n))+'%'}
+function ema(values,period){let k=2/(period+1),v=values.slice(0,period).reduce((a,b)=>a+b,0)/period;for(let i=period;i<values.length;i++)v=values[i]*k+v*(1-k);return v}
+function rsi(values,p=14){let gains=0,loss=0;for(let i=values.length-p;i<values.length;i++){let d=values[i]-values[i-1];if(d>0)gains+=d;else loss-=d}if(loss===0)return 100;let rs=(gains/p)/(loss/p);return 100-100/(1+rs)}
+function analyze(symbol, closes){
+ const c=closes.filter(Number.isFinite);if(c.length<65)return null;
+ const last=c.at(-1),sma20=c.slice(-20).reduce((a,b)=>a+b,0)/20,sma50=c.slice(-50).reduce((a,b)=>a+b,0)/50;
+ const p5=(last/c.at(-6)-1)*100,p20=(last/c.at(-21)-1)*100,p60=(last/c.at(-61)-1)*100;
+ const e20=ema(c.slice(-100),20),e50=ema(c.slice(-100),50),r=rsi(c);
+ const rets=[];for(let i=c.length-20;i<c.length;i++)rets.push(c[i]/c[i-1]-1);
+ const sd=Math.sqrt(rets.reduce((s,x)=>s+x*x,0)/rets.length);
+ let score=0;
+ if(last>sma20)score+=15;if(sma20>sma50)score+=20;if(e20>e50)score+=10;
+ if(p5>0)score+=Math.min(10,p5*2);if(p20>0)score+=Math.min(15,p20*1.2);if(p60>0)score+=Math.min(15,p60*.5);
+ if(r>=50&&r<=70)score+=10;else if(r>70)score-=8;
+ if(last>=Math.max(...c.slice(-21,-1)))score+=15;
+ score=Math.max(0,Math.min(100,Math.round(score)));
+ const stop=last*(1-Math.max(.025,Math.min(.08,sd*2.5)));
+ return {symbol,price:last,score,p5,p20,p60,rsi:r,stop,target:last+2*(last-stop),trend:last>sma20&&sma20>sma50?'Opwaarts':'Gemengd',vol:sd*100};
+}
+async function fetchSymbols(){
+ const r=await fetch(SYMBOLS_URL,{cache:'no-store'});if(!r.ok)throw new Error('S&P 500-aandelenlijst kon niet worden opgehaald.');
+ const csv=await r.text();const lines=csv.trim().split(/\r?\n/);const head=lines.shift().split(',');
+ const idx=head.findIndex(x=>x.toLowerCase().includes('symbol'));if(idx<0)throw new Error('Ongeldige aandelenlijst.');
+ return lines.map(line=>{const cols=line.split(',');return (cols[idx]||'').replaceAll('.','-').replaceAll('"','').trim()}).filter(Boolean);
+}
+async function fetchSparkBatch(symbols){
+ const url='https://query1.finance.yahoo.com/v7/finance/spark?symbols='+encodeURIComponent(symbols.join(','))+'&range=6mo&interval=1d';
+ const res=await fetch(PROXY+url,{cache:'no-store'});if(!res.ok)throw new Error('Databron weigert de aanvraag (HTTP '+res.status+'). Probeer later opnieuw.');
+ const json=await res.json();return json.spark?.result||[];
+}
+async function runScan(force=false){
+ const cached=loadCache();
+ if(!force&&cached&&cached.day===localDayKey()){rows=cached.rows||[];render(cached);setStatus('Vandaag al bijgewerkt. Opgeslagen resultaten worden gebruikt.');return;}
+ $('updateBtn').disabled=true;setProgress(0);setStatus('S&P 500-aandelenlijst ophalen…');
+ try{
+  const symbols=await fetchSymbols();$('universe').textContent=symbols.length;
+  let output=[],batches=[];for(let i=0;i<symbols.length;i+=20)batches.push(symbols.slice(i,i+20));
+  for(let i=0;i<batches.length;i++){
+   const result=await fetchSparkBatch(batches[i]);
+   for(const item of result){
+    const closes=item.response?.[0]?.indicators?.quote?.[0]?.close||[];
+    const a=analyze(item.symbol,closes);if(a)output.push(a);
+   }
+   setProgress((i+1)/batches.length*100);
+   setStatus(`Aandelen analyseren… ${Math.min((i+1)*20,symbols.length)} / ${symbols.length}`);
+  }
+  output.sort((a,b)=>b.score-a.score);
+  const data={day:localDayKey(),updated:new Date().toISOString(),count:symbols.length,rows:output};
+  saveCache(data);rows=output;render(data);
+  setStatus(`Scan klaar. ${output.length} aandelen succesvol geanalyseerd.`);
+ }catch(e){setStatus('Update mislukt: '+e.message+' Je bestaande opgeslagen resultaten blijven behouden.');}
+ finally{$('updateBtn').disabled=false;}
+}
+function render(data){
+ rows=data.rows||[];$('lastScan').textContent=data.updated?new Date(data.updated).toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'}):'—';
+ $('candidateCount').textContent=rows.filter(x=>x.score>=65).length;$('updatedLabel').textContent=data.updated?new Date(data.updated).toLocaleDateString('nl-BE'):'Geen data';
+ $('cachePill').textContent=data.day===localDayKey()?'Vandaag bijgewerkt':'Opgeslagen scan';
+ $('results').innerHTML=rows.slice(0,50).map((r,i)=>`<tr data-i="${i}"><td>${i+1}</td><td><b>${r.symbol}</b></td><td class="score">${r.score}</td><td>${money(r.price)}</td><td class="${r.p5>=0?'score':'negative'}">${pct(r.p5)}</td><td class="${r.p20>=0?'score':'negative'}">${pct(r.p20)}</td></tr>`).join('')||'<tr><td colspan="6">Geen resultaten.</td></tr>';
+ document.querySelectorAll('#results tr[data-i]').forEach(tr=>tr.addEventListener('click',()=>showDetail(rows[Number(tr.dataset.i)])));
+}
+function showDetail(r){
+ $('details').style.display='block';$('detailTitle').textContent=r.symbol;$('detailScore').textContent='Score '+r.score;
+ $('entry').textContent=money(r.price);$('stop').textContent=money(r.stop);$('target').textContent=money(r.target);
+ $('trend').textContent=r.trend;$('rsi').textContent=r.rsi.toFixed(1);$('vol').textContent=r.vol.toFixed(2)+'%';
+ $('details').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('updateBtn').addEventListener('click',()=>runScan(true));
+$('clearBtn').addEventListener('click',()=>{localStorage.removeItem(CACHE_KEY);rows=[];$('results').innerHTML='<tr><td colspan="6">Lokale gegevens gewist.</td></tr>';$('lastScan').textContent='—';$('candidateCount').textContent='—';$('cachePill').textContent='Nog niet gescand';setStatus('Lokale scanresultaten zijn gewist.');});
+window.addEventListener('load',()=>{const c=loadCache();if(c){render(c);if(c.day===localDayKey())setStatus('Vandaag al bijgewerkt. Gebruik de knop als je opnieuw wilt scannen.');else runScan(false)}else runScan(false);});
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
