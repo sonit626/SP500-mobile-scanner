@@ -1,156 +1,43 @@
 <!doctype html>
-<html lang="nl">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#101827">
-<meta name="description" content="Lokale S&P 500 swing-trade scanner">
-<link rel="manifest" href="manifest.webmanifest">
-<title>S&P 500 Swing Scanner</title>
+<html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101827"><meta name="description" content="Lokale S&P 500 swing-trading scanner en portfolio backtest"><link rel="manifest" href="manifest.webmanifest"><title>S&P 500 Swing Scanner</title>
 <style>
-:root{color-scheme:dark;--bg:#0b1220;--panel:#121d2e;--muted:#91a1b8;--line:#26364d;--green:#42d392;--red:#ff7272;--blue:#70a7ff}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#edf3fb;font:15px system-ui,-apple-system,Segoe UI,sans-serif}
-main{max-width:980px;margin:auto;padding:18px 14px 40px}
-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 0 18px}
-h1{font-size:22px;margin:0}h2{font-size:17px;margin:0 0 12px}
-small,.muted{color:var(--muted)}.pill{font-size:12px;padding:5px 9px;border:1px solid var(--line);border-radius:30px;color:var(--muted)}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:15px;margin:12px 0}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.stat{background:#0d1726;border:1px solid var(--line);border-radius:12px;padding:11px}.stat b{display:block;font-size:22px}
-button{border:0;border-radius:12px;padding:13px 15px;font-weight:700;font-size:14px;cursor:pointer}
-.primary{background:var(--green);color:#062217;width:100%}.secondary{background:#26364d;color:#edf3fb;width:100%;margin-top:9px}
-button:disabled{opacity:.45;cursor:wait}.progress{height:8px;background:#26364d;border-radius:20px;overflow:hidden;margin:10px 0}.bar{height:100%;width:0;background:var(--green);transition:width .2s}
-.row{display:flex;justify-content:space-between;gap:10px;align-items:center}.status{font-size:13px;color:var(--muted);margin-top:8px;min-height:20px}
-table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:10px 7px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--muted);font-weight:600}
-tbody tr{cursor:pointer}tbody tr:active{background:#20304a}.score{font-weight:800;color:var(--green)}.negative{color:var(--red)}
-#resultsWrap{overflow-x:auto}.tag{display:inline-block;padding:3px 7px;border-radius:6px;background:#1d3b33;color:var(--green);font-size:11px}
-#details{display:none}.detailgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.detail{background:#0d1726;padding:10px;border-radius:10px}.detail span{display:block;color:var(--muted);font-size:12px}
-.note{font-size:12px;line-height:1.5;color:var(--muted)}.warning{color:#ffd27b}
-@media(min-width:700px){main{padding:28px}.stats{grid-template-columns:repeat(4,1fr)}}
-</style>
-</head>
-<body>
-<main>
-<header><div><h1>📈 S&P 500 Swing Scanner</h1><small>Lokale analyse op je gsm</small></div><span class="pill" id="cachePill">Nog niet gescand</span></header>
-<section class="panel">
- <div class="row"><h2>Dagelijkse scan</h2><span class="pill">3–10 handelsdagen</span></div>
- <div class="stats">
-  <div class="stat"><small>Aandelen</small><b id="universe">500</b></div>
-  <div class="stat"><small>Laatste scan</small><b id="lastScan" style="font-size:15px">—</b></div>
-  <div class="stat"><small>Kandidaten</small><b id="candidateCount">—</b></div>
- </div>
- <div class="progress"><div class="bar" id="bar"></div></div>
- <div class="status" id="status">Open de app. De eerste keer van de dag wordt automatisch een scan gestart.</div>
- <button class="primary" id="updateBtn">Update opnieuw uitvoeren</button>
- <div class="note" style="margin-top:10px">Bij de eerste opening van een nieuwe dag wordt automatisch bijgewerkt. Daarna gebruikt de app de opgeslagen resultaten. De knop hierboven forceert een nieuwe scan.</div>
-</section>
-<section class="panel">
- <div class="row"><h2>Beste bullish kandidaten</h2><span class="pill" id="updatedLabel">Geen data</span></div>
- <div id="resultsWrap"><table><thead><tr><th>#</th><th>Aandeel</th><th>Score</th><th>Laatste koers</th><th>5d</th><th>20d</th></tr></thead><tbody id="results"><tr><td colspan="6" class="muted">Nog geen scanresultaten.</td></tr></tbody></table></div>
-</section>
-<section class="panel" id="details">
- <div class="row"><h2 id="detailTitle">Aandeel</h2><span class="pill" id="detailScore">Score —</span></div>
- <div class="detailgrid">
-  <div class="detail"><span>Indicatieve instap</span><b id="entry">—</b></div>
-  <div class="detail"><span>Stop-loss</span><b id="stop">—</b></div>
-  <div class="detail"><span>Doel (2R)</span><b id="target">—</b></div>
-  <div class="detail"><span>Trend</span><b id="trend">—</b></div>
-  <div class="detail"><span>RSI (14)</span><b id="rsi">—</b></div>
-  <div class="detail"><span>20-daagse volatiliteit</span><b id="vol">—</b></div>
- </div>
- <p class="note">Dit zijn technische indicaties, geen koopadvies. Koersen kunnen vertraagd zijn. Controleer altijd de actuele koers en eventuele bedrijfsresultaten voor je een order plaatst.</p>
-</section>
-<section class="panel">
- <h2>Instellingen & gegevens</h2>
- <div class="row"><span class="muted">Lokale opslag</span><b id="storageState">Actief</b></div>
- <div class="row" style="margin-top:8px"><span class="muted">Gegevensbron</span><b>Yahoo Finance chart</b></div>
- <p class="note warning">De beursgegevens worden via een gratis publieke proxy opgehaald. Yahoo Finance is geen officiële, gegarandeerde API; de dienst kan tijdelijk weigeren of wijzigen. Er is geen betaalde API-sleutel nodig.</p>
- <button class="secondary" id="clearBtn">Lokale scanresultaten wissen</button>
-</section>
-<p class="note">De app bewaart scanresultaten op dit toestel. Wis je browsergegevens of gebruik je een andere browser, dan kunnen de opgeslagen resultaten verdwijnen. De app voert geen transacties uit.</p>
-</main>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#121d2e;--muted:#91a1b8;--line:#26364d;--green:#42d392;--red:#ff7272;--blue:#70a7ff;--amber:#ffd27b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#edf3fb;font:15px system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:1000px;margin:auto;padding:18px 14px 40px}header,.row{display:flex;justify-content:space-between;align-items:center;gap:12px}header{margin:8px 0 18px}h1{font-size:22px;margin:0}h2{font-size:17px;margin:0 0 12px}small,.muted{color:var(--muted)}.pill{font-size:12px;padding:5px 9px;border:1px solid var(--line);border-radius:30px;color:var(--muted);white-space:nowrap}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:15px;margin:12px 0}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.stat,.detail{background:#0d1726;border:1px solid var(--line);border-radius:12px;padding:11px}.stat b{display:block;font-size:21px}button{border:0;border-radius:11px;padding:12px 14px;font-weight:700;font-size:14px;cursor:pointer}.primary{background:var(--green);color:#062217;width:100%;margin-top:8px}.secondary{background:#26364d;color:#edf3fb}.danger{background:#432c34;color:#ffb6b6;width:100%;margin-top:8px}button:disabled{opacity:.45;cursor:wait}.progress{height:8px;background:#26364d;border-radius:20px;overflow:hidden;margin:10px 0}.bar{height:100%;width:0;background:var(--green);transition:width .2s}.status{font-size:13px;color:var(--muted);margin-top:8px;min-height:20px}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:9px 7px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--muted);font-weight:600}tbody tr{cursor:pointer}tbody tr:active{background:#20304a}.score,.positive{font-weight:800;color:var(--green)}.negative{color:var(--red)}.tag{display:inline-block;padding:3px 7px;border-radius:6px;background:#1d3b33;color:var(--green);font-size:11px}.warn{color:var(--amber)}.bad{color:var(--red)}.note{font-size:12px;line-height:1.5;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.detail span{display:block;color:var(--muted);font-size:12px}.detail b{display:block;margin-top:3px}.scroll{overflow:auto}input,select{background:#0d1726;color:#edf3fb;border:1px solid var(--line);border-radius:9px;padding:10px;min-width:80px}label{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:7px}.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.hidden{display:none}@media(min-width:700px){main{padding:28px}.stats{grid-template-columns:repeat(4,1fr)}.grid{grid-template-columns:repeat(3,1fr)}}
+</style></head><body><main>
+<header><div><h1>📈 S&amp;P 500 Swing Scanner</h1><small>Lokale analyse · swing horizon 3–10 handelsdagen</small></div><span class="pill" id="cachePill">Nog niet gescand</span></header>
+<section class="panel"><div class="row"><h2>Dagelijkse scan</h2><span class="pill" id="regime">SPY-regime: onbekend</span></div><div class="stats"><div class="stat"><small>Aandelen</small><b id="universe">500</b></div><div class="stat"><small>Laatste scan</small><b id="lastScan" style="font-size:15px">—</b></div><div class="stat"><small>Kandidaten</small><b id="candidateCount">—</b></div><div class="stat"><small>Earnings ≤7 dagen</small><b id="earnCount">—</b></div></div><div class="progress"><div class="bar" id="bar"></div></div><div class="status" id="status">Eerste opening van de dag start automatisch een scan.</div><button class="primary" id="updateBtn">Update opnieuw uitvoeren</button><p class="note">De eerste opening van een nieuwe lokale kalenderdag scant automatisch; heropeningen gebruiken de cache. Deze knop forceert een nieuwe scan.</p></section>
+<section class="panel"><div class="row"><h2>Kandidaten</h2><label><input id="earnFilter" type="checkbox"> Verberg earnings binnen 7 dagen</label></div><p class="note">Score combineert breakout (0–35), pullback (0–30) en momentum (0–35). Klik een aandeel voor details. “Onbekend” betekent dat de gratis bron geen earnings-datum teruggaf; behandel dit als niet gecontroleerd.</p><div class="scroll"><table><thead><tr><th>#</th><th>Aandeel</th><th>Totaal</th><th>Breakout</th><th>Pullback</th><th>Momentum</th><th>Koers</th><th>5d</th><th>Earnings</th></tr></thead><tbody id="results"><tr><td colspan="9" class="muted">Nog geen scanresultaten.</td></tr></tbody></table></div></section>
+<section class="panel hidden" id="details"><div class="row"><h2 id="detailTitle">Aandeel</h2><button class="secondary" id="trackBtn">Kandidaat opvolgen</button></div><div class="grid"><div class="detail"><span>Score (breakout / pullback / momentum)</span><b id="detailScore">—</b></div><div class="detail"><span>Indicatieve instap</span><b id="entry">—</b></div><div class="detail"><span>Stop-loss / doel (2R)</span><b id="riskLevels">—</b></div><div class="detail"><span>SPY-regime</span><b id="detailRegime">—</b></div><div class="detail"><span>Trend / RSI (14)</span><b id="trend">—</b></div><div class="detail"><span>Earnings</span><b id="detailEarn">—</b></div></div><p class="note">Technische indicaties zijn geen koopadvies. Koersen kunnen vertraagd zijn. Controleer actuele koersen en bedrijfsresultaten voor een order.</p></section>
+<section class="panel"><div class="row"><h2>Portefeuille-backtest</h2><span class="pill">Dagdata · max. 5 posities</span></div><div class="controls"><label>Startkapitaal $ <input id="capital" type="number" min="1000" step="1000" value="100000"></label><label>Risico per trade <select id="riskPct"><option value="2">2%</option><option value="2.5" selected>2,5%</option><option value="3">3%</option></select></label><button class="secondary" id="backtestBtn">Backtest uitvoeren</button></div><div class="stats" style="margin-top:10px"><div class="stat"><small>Eindwaarde</small><b id="btEnd">—</b></div><div class="stat"><small>Rendement</small><b id="btReturn">—</b></div><div class="stat"><small>Max. drawdown</small><b id="btDD">—</b></div><div class="stat"><small>Trades / winrate</small><b id="btTrades">—</b></div></div><p class="note">Indicatieve historische simulatie met aangepaste dagkoersen, signalen op slotkoers en uitvoering vanaf de volgende slotkoers. Stop/2R-doel en SPY EMA50/200 worden dagelijks gecontroleerd. Max. 5 posities; risico per positie is 2–3% van actuele equity, met maximaal 100% aandelenblootstelling. Slippage, transactiekosten, dividenden, delistings en intraday koerspad zijn niet gemodelleerd. Dit is geen voorspelling of winstgarantie.</p></section>
+<section class="panel"><div class="row"><h2>Scanhistoriek</h2><span class="pill" id="historyCount">0 scans</span></div><div class="scroll"><table><thead><tr><th>Datum</th><th>Regime</th><th>Kandidaten</th><th>Opvolgd</th></tr></thead><tbody id="history"><tr><td colspan="4" class="muted">Nog geen historiek.</td></tr></tbody></table></div><h2 style="margin-top:18px">Opgevolgde kandidaten</h2><div class="scroll"><table><thead><tr><th>Aandeel</th><th>Sinds</th><th>Startkoers</th><th>Huidig</th><th>Verandering</th><th></th></tr></thead><tbody id="watchlist"><tr><td colspan="6" class="muted">Nog geen kandidaten.</td></tr></tbody></table></div></section>
+<section class="panel"><h2>Instellingen &amp; databronnen</h2><p class="note">Koershistorie: Yahoo Finance chart via publieke proxy (geen officiële of gegarandeerde API). S&amp;P-lijst: publieke GitHub-dataset. Earnings: Yahoo chart-eventgegevens voor scan-kandidaten; beschikbaarheid is onvolledig en niet gegarandeerd. Gratis bronnen kunnen vertragen, wijzigen of weigeren. Geen API-sleutel of betaald abonnement ingebouwd.</p><p class="note">Alle scanhistorie, opvolging en instellingen staan lokaal in deze browser. Wissen van browsergegevens verwijdert ze. Backtests gebruiken alleen de historische bars die de bron tijdens de scan heeft geleverd.</p><button class="danger" id="clearBtn">Alle lokale scannerdata wissen</button></section>
+<p class="note">De app voert geen transacties uit. Backtestresultaten zijn afhankelijk van aannames en historische data en bieden geen garantie voor toekomstige prestaties.</p></main>
 <script>
-const CACHE_KEY='sp500_swing_scan_v1';
-const SYMBOLS_URL='https://raw.githubusercontent.com/datasets/s-and-p-500-companies/master/data/constituents.csv';
-const PROXY='https://proxy.cors.dev/';
-const $=id=>document.getElementById(id);
-let rows=[];
-
-function localDayKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-function money(n){return Number.isFinite(n)?'$'+n.toFixed(2):'—';}
-function pct(n){return Number.isFinite(n)?(n>=0?'+':'')+n.toFixed(1)+'%':'—';}
-function loadCache(){try{return JSON.parse(localStorage.getItem(CACHE_KEY)||'null')}catch{return null}}
-function saveCache(data){localStorage.setItem(CACHE_KEY,JSON.stringify(data))}
-function setStatus(t){$('status').textContent=t}
-function setProgress(n){$('bar').style.width=Math.max(0,Math.min(100,n))+'%'}
-function ema(values,period){let k=2/(period+1),v=values.slice(0,period).reduce((a,b)=>a+b,0)/period;for(let i=period;i<values.length;i++)v=values[i]*k+v*(1-k);return v}
-function rsi(values,p=14){let gains=0,loss=0;for(let i=values.length-p;i<values.length;i++){let d=values[i]-values[i-1];if(d>0)gains+=d;else loss-=d}if(loss===0)return 100;let rs=(gains/p)/(loss/p);return 100-100/(1+rs)}
-function analyze(symbol, closes){
- const c=closes.filter(Number.isFinite);if(c.length<65)return null;
- const last=c.at(-1),sma20=c.slice(-20).reduce((a,b)=>a+b,0)/20,sma50=c.slice(-50).reduce((a,b)=>a+b,0)/50;
- const p5=(last/c.at(-6)-1)*100,p20=(last/c.at(-21)-1)*100,p60=(last/c.at(-61)-1)*100;
- const e20=ema(c.slice(-100),20),e50=ema(c.slice(-100),50),r=rsi(c);
- const rets=[];for(let i=c.length-20;i<c.length;i++)rets.push(c[i]/c[i-1]-1);
- const sd=Math.sqrt(rets.reduce((s,x)=>s+x*x,0)/rets.length);
- let score=0;
- if(last>sma20)score+=15;if(sma20>sma50)score+=20;if(e20>e50)score+=10;
- if(p5>0)score+=Math.min(10,p5*2);if(p20>0)score+=Math.min(15,p20*1.2);if(p60>0)score+=Math.min(15,p60*.5);
- if(r>=50&&r<=70)score+=10;else if(r>70)score-=8;
- if(last>=Math.max(...c.slice(-21,-1)))score+=15;
- score=Math.max(0,Math.min(100,Math.round(score)));
- const stop=last*(1-Math.max(.025,Math.min(.08,sd*2.5)));
- return {symbol,price:last,score,p5,p20,p60,rsi:r,stop,target:last+2*(last-stop),trend:last>sma20&&sma20>sma50?'Opwaarts':'Gemengd',vol:sd*100};
-}
-async function fetchSymbols(){
- const r=await fetch(SYMBOLS_URL,{cache:'no-store'});if(!r.ok)throw new Error('S&P 500-aandelenlijst kon niet worden opgehaald.');
- const csv=await r.text();const lines=csv.trim().split(/\r?\n/);const head=lines.shift().split(',');
- const idx=head.findIndex(x=>x.toLowerCase().includes('symbol'));if(idx<0)throw new Error('Ongeldige aandelenlijst.');
- return lines.map(line=>{const cols=line.split(',');return (cols[idx]||'').replaceAll('.','-').replaceAll('"','').trim()}).filter(Boolean);
-}
-async function fetchSparkBatch(symbols){
- const url='https://query1.finance.yahoo.com/v7/finance/spark?symbols='+encodeURIComponent(symbols.join(','))+'&range=6mo&interval=1d';
- const res=await fetch(PROXY+url,{cache:'no-store'});if(!res.ok)throw new Error('Databron weigert de aanvraag (HTTP '+res.status+'). Probeer later opnieuw.');
- const json=await res.json();return json.spark?.result||[];
-}
-async function runScan(force=false){
- const cached=loadCache();
- if(!force&&cached&&cached.day===localDayKey()){rows=cached.rows||[];render(cached);setStatus('Vandaag al bijgewerkt. Opgeslagen resultaten worden gebruikt.');return;}
- $('updateBtn').disabled=true;setProgress(0);setStatus('S&P 500-aandelenlijst ophalen…');
- try{
-  const symbols=await fetchSymbols();$('universe').textContent=symbols.length;
-  let output=[],batches=[];for(let i=0;i<symbols.length;i+=20)batches.push(symbols.slice(i,i+20));
-  for(let i=0;i<batches.length;i++){
-   const result=await fetchSparkBatch(batches[i]);
-   for(const item of result){
-    const closes=item.response?.[0]?.indicators?.quote?.[0]?.close||[];
-    const a=analyze(item.symbol,closes);if(a)output.push(a);
-   }
-   setProgress((i+1)/batches.length*100);
-   setStatus(`Aandelen analyseren… ${Math.min((i+1)*20,symbols.length)} / ${symbols.length}`);
-  }
-  output.sort((a,b)=>b.score-a.score);
-  const data={day:localDayKey(),updated:new Date().toISOString(),count:symbols.length,rows:output};
-  saveCache(data);rows=output;render(data);
-  setStatus(`Scan klaar. ${output.length} aandelen succesvol geanalyseerd.`);
- }catch(e){setStatus('Update mislukt: '+e.message+' Je bestaande opgeslagen resultaten blijven behouden.');}
- finally{$('updateBtn').disabled=false;}
-}
-function render(data){
- rows=data.rows||[];$('lastScan').textContent=data.updated?new Date(data.updated).toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'}):'—';
- $('candidateCount').textContent=rows.filter(x=>x.score>=65).length;$('updatedLabel').textContent=data.updated?new Date(data.updated).toLocaleDateString('nl-BE'):'Geen data';
- $('cachePill').textContent=data.day===localDayKey()?'Vandaag bijgewerkt':'Opgeslagen scan';
- $('results').innerHTML=rows.slice(0,50).map((r,i)=>`<tr data-i="${i}"><td>${i+1}</td><td><b>${r.symbol}</b></td><td class="score">${r.score}</td><td>${money(r.price)}</td><td class="${r.p5>=0?'score':'negative'}">${pct(r.p5)}</td><td class="${r.p20>=0?'score':'negative'}">${pct(r.p20)}</td></tr>`).join('')||'<tr><td colspan="6">Geen resultaten.</td></tr>';
- document.querySelectorAll('#results tr[data-i]').forEach(tr=>tr.addEventListener('click',()=>showDetail(rows[Number(tr.dataset.i)])));
-}
-function showDetail(r){
- $('details').style.display='block';$('detailTitle').textContent=r.symbol;$('detailScore').textContent='Score '+r.score;
- $('entry').textContent=money(r.price);$('stop').textContent=money(r.stop);$('target').textContent=money(r.target);
- $('trend').textContent=r.trend;$('rsi').textContent=r.rsi.toFixed(1);$('vol').textContent=r.vol.toFixed(2)+'%';
- $('details').scrollIntoView({behavior:'smooth',block:'start'});
-}
-$('updateBtn').addEventListener('click',()=>runScan(true));
-$('clearBtn').addEventListener('click',()=>{localStorage.removeItem(CACHE_KEY);rows=[];$('results').innerHTML='<tr><td colspan="6">Lokale gegevens gewist.</td></tr>';$('lastScan').textContent='—';$('candidateCount').textContent='—';$('cachePill').textContent='Nog niet gescand';setStatus('Lokale scanresultaten zijn gewist.');});
-window.addEventListener('load',()=>{const c=loadCache();if(c){render(c);if(c.day===localDayKey())setStatus('Vandaag al bijgewerkt. Gebruik de knop als je opnieuw wilt scannen.');else runScan(false)}else runScan(false);});
-if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-</script>
-</body>
-</html>
+'use strict';
+const CACHE_KEY='sp500_swing_scan_v2',HIST_KEY='sp500_swing_history_v1',WATCH_KEY='sp500_swing_watch_v1',SYMBOLS_URL='https://raw.githubusercontent.com/datasets/s-and-p-500-companies/master/data/constituents.csv',PROXY='https://proxy.cors.dev/';
+const $=id=>document.getElementById(id);let rows=[],active=null,lastData=null;
+function dayKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function money(n){return Number.isFinite(n)?'$'+n.toFixed(2):'—'}function pct(n){return Number.isFinite(n)?(n>=0?'+':'')+n.toFixed(1)+'%':'—'}function read(key,def){try{return JSON.parse(localStorage.getItem(key)||'null')??def}catch{return def}}function write(key,v){localStorage.setItem(key,JSON.stringify(v))}function setStatus(s){$('status').textContent=s}function progress(v){$('bar').style.width=Math.max(0,Math.min(100,v))+'%'}
+function ema(a,p){if(a.length<p)return NaN;let v=a.slice(0,p).reduce((x,y)=>x+y,0)/p,k=2/(p+1);for(let i=p;i<a.length;i++)v=a[i]*k+v*(1-k);return v}
+function rsi(a,p=14){if(a.length<p+1)return NaN;let g=0,l=0;for(let i=a.length-p;i<a.length;i++){let d=a[i]-a[i-1];if(d>0)g+=d;else l-=d}return l===0?100:100-100/(1+g/l)}
+function atrPct(a,p=20){let x=[];for(let i=Math.max(1,a.length-p);i<a.length;i++)x.push(Math.abs(a[i]/a[i-1]-1));return x.length?Math.sqrt(x.reduce((s,n)=>s+n*n,0)/x.length):.03}
+function scoreOne(symbol,closes,spyRegime='unknown',timestamps=[]){const c=closes.filter(Number.isFinite);if(c.length<60)return null;const last=c.at(-1),s20=c.slice(-20).reduce((s,x)=>s+x,0)/20,s50=c.slice(-50).reduce((s,x)=>s+x,0)/50,p5=100*(last/c.at(-6)-1),p20=100*(last/c.at(-21)-1),p60=100*(last/c.at(-Math.min(61,c.length))-1),e20=ema(c.slice(-100),20),e50=ema(c.slice(-100),50),hi=Math.max(...c.slice(-21,-1)),lo=Math.min(...c.slice(-21,-1)),r=rsi(c),vol=atrPct(c),dist=100*(last/s20-1);
+ let breakout=0;if(last>=hi)breakout+=22;if(last>s50)breakout+=7;if(p20>0)breakout+=Math.min(6,p20*.3);
+ let pullback=0;if(last>s50&&e20>e50){if(last<=hi*1.01&&last>=s20*.97)pullback+=14;if(dist>-5&&dist<2)pullback+=8;if(p5<0&&p20>0)pullback+=8}
+ let momentum=0;if(p20>0)momentum+=Math.min(13,p20*.55);if(p60>0)momentum+=Math.min(12,p60*.18);if(e20>e50)momentum+=5;if(r>=50&&r<=70)momentum+=5;if(r>75)momentum-=6;if(spyRegime==='bullish')momentum+=3;
+ breakout=Math.round(Math.max(0,Math.min(35,breakout)));pullback=Math.round(Math.max(0,Math.min(30,pullback)));momentum=Math.round(Math.max(0,Math.min(35,momentum)));const stop=last*(1-Math.max(.025,Math.min(.08,vol*2.5)));return {symbol,price:last,score:breakout+pullback+momentum,breakout,pullback,momentum,p5,p20,p60,rsi:r,vol:vol*100,stop,target:last+2*(last-stop),trend:last>s20&&s20>s50?'Opwaarts':'Gemengd',closes:c,timestamps};}
+function regimeOf(c){if(c.length<200)return {state:'unknown',price:c.at(-1),ema50:NaN,ema200:NaN};const a=ema(c,50),b=ema(c,200);return {state:c.at(-1)>a&&a>b?'bullish':c.at(-1)<a&&a<b?'bearish':'mixed',price:c.at(-1),ema50:a,ema200:b}}
+async function fetchSymbols(){const r=await fetch(SYMBOLS_URL,{cache:'no-store'});if(!r.ok)throw Error('S&P 500-lijst niet beschikbaar.');const lines=(await r.text()).trim().split(/\r?\n/),h=lines.shift().split(','),idx=h.findIndex(x=>x.toLowerCase().includes('symbol'));if(idx<0)throw Error('Ongeldige aandelenlijst.');return lines.map(l=>l.split(',')[idx]?.replaceAll('.','-').replaceAll('"','').trim()).filter(Boolean)}
+async function fetchSpark(symbols){const u='https://query1.finance.yahoo.com/v7/finance/spark?symbols='+encodeURIComponent(symbols.join(','))+'&range=2y&interval=1d';const r=await fetch(PROXY+u,{cache:'no-store'});if(!r.ok)throw Error('Koersbron weigert aanvraag (HTTP '+r.status+').');const j=await r.json();return j.spark?.result||[]}
+async function earningsFor(symbol){try{const u=`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=calendarEvents`;const r=await fetch(PROXY+u,{cache:'no-store'});if(r.ok){const j=await r.json(),dates=j.quoteSummary?.result?.[0]?.calendarEvents?.earnings?.earningsDate||[],today=Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth(),new Date().getUTCDate())/1000;const ts=dates.map(x=>Number(x.raw)).filter(x=>Number.isFinite(x)&&x>=today).sort((a,b)=>a-b)[0];if(ts){const dt=new Date(ts*1000),days=Math.floor((Date.UTC(dt.getUTCFullYear(),dt.getUTCMonth(),dt.getUTCDate())-today*1000)/86400000);return {date:dt.toISOString().slice(0,10),days}}}return null}catch{return null}}
+async function updateEarnings(list){let idx=0,done=0;const workers=Array.from({length:4},async()=>{while(idx<list.length){const x=list[idx++];x.earnings=await earningsFor(x.symbol);done++;if(done%5===0){setStatus(`Earningsdatums ophalen… ${done}/${list.length}`)}}});await Promise.all(workers)}
+function history(){return read(HIST_KEY,[])}function recordScan(data){let h=history().filter(x=>x.day!==data.day);h.unshift({day:data.day,updated:data.updated,regime:data.regime.state,count:data.rows.filter(r=>r.score>=55).length,leaders:data.rows.slice(0,12).map(r=>({symbol:r.symbol,price:r.price,score:r.score}))});write(HIST_KEY,h.slice(0,90))}
+async function scan(force=false){const old=read(CACHE_KEY,null);if(!force&&old&&old.day===dayKey()){lastData=old;rows=old.rows||[];render(old);setStatus('Vandaag al bijgewerkt; lokale resultaten geladen.');return} $('updateBtn').disabled=true;progress(0);setStatus('S&P 500-lijst ophalen…');try{const symbols=await fetchSymbols();$('universe').textContent=symbols.length;let raw=[];for(let i=0;i<symbols.length;i+=20){const result=await fetchSpark(symbols.slice(i,i+20));raw.push(...result);progress(Math.min(45,(i+20)/symbols.length*45));setStatus(`Koershistorie ophalen… ${Math.min(i+20,symbols.length)}/${symbols.length}`)}const spyItem=raw.find(x=>x.symbol==='SPY');let spyCloses=spyItem?.response?.[0]?.indicators?.quote?.[0]?.close||[];if(spyCloses.filter(Number.isFinite).length<200){const z=await fetchSpark(['SPY']);spyCloses=z[0]?.response?.[0]?.indicators?.quote?.[0]?.close||[]}const cleanSpy=spyCloses.filter(Number.isFinite),regime=regimeOf(cleanSpy);let output=[];for(const item of raw){const q=item.response?.[0]?.indicators?.quote?.[0],cl=q?.close||[];const a=scoreOne(item.symbol,cl,regime.state,item.response?.[0]?.timestamp||[]);if(a)output.push(a)}output.sort((a,b)=>b.score-a.score);const top=output.filter(x=>x.score>=45).slice(0,60);setStatus('Earningskalender voor kandidaten controleren…');await updateEarnings(top);output.sort((a,b)=>b.score-a.score);const data={day:dayKey(),updated:new Date().toISOString(),count:symbols.length,regime,spyCloses:cleanSpy,rows:output};write(CACHE_KEY,data);recordScan(data);lastData=data;rows=data.rows;progress(100);render(data);setStatus(`Scan klaar: ${output.length} aandelen geanalyseerd; earnings gecontroleerd voor ${top.length} kandidaten.`)}catch(e){setStatus('Scan mislukt: '+e.message+' Bestaande lokale resultaten blijven behouden.')}finally{$('updateBtn').disabled=false}}
+function render(d){lastData=d;rows=d.rows||[];$('lastScan').textContent=d.updated?new Date(d.updated).toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'}):'—';$('candidateCount').textContent=rows.filter(x=>x.score>=55).length;$('earnCount').textContent=rows.filter(x=>x.earnings?.days<=7).length;$('cachePill').textContent=d.day===dayKey()?'Vandaag bijgewerkt':'Opgeslagen scan';const rg=d.regime||{state:'unknown'};$('regime').textContent='SPY-regime: '+({bullish:'Bullish · boven EMA50/200',bearish:'Bearish · onder EMA50/200',mixed:'Gemengd',unknown:'onbekend (onvoldoende data)'}[rg.state]||'onbekend');$('regime').className='pill '+(rg.state==='bullish'?'positive':rg.state==='bearish'?'bad':'warn');const filt=$('earnFilter').checked,visible=rows.filter(x=>!(filt&&x.earnings?.days<=7));$('results').innerHTML=visible.slice(0,70).map((r,i)=>`<tr data-s="${r.symbol}"><td>${i+1}</td><td><b>${r.symbol}</b></td><td class="score">${r.score}</td><td>${r.breakout}</td><td>${r.pullback}</td><td>${r.momentum}</td><td>${money(r.price)}</td><td class="${r.p5>=0?'positive':'negative'}">${pct(r.p5)}</td><td class="${r.earnings?.days<=7?'bad':r.earnings?'positive':'warn'}">${r.earnings?`${r.earnings.date} (${r.earnings.days}d)`:'Onbekend'}</td></tr>`).join('')||'<tr><td colspan="9">Geen kandidaten voor dit filter.</td></tr>';document.querySelectorAll('#results tr[data-s]').forEach(tr=>tr.addEventListener('click',()=>showDetail(rows.find(x=>x.symbol===tr.dataset.s))));renderHistory();renderWatch()}
+function showDetail(r){if(!r)return;active=r;$('details').classList.remove('hidden');$('detailTitle').textContent=r.symbol;$('detailScore').textContent=`${r.score} (${r.breakout}/${r.pullback}/${r.momentum})`;$('entry').textContent=money(r.price);$('riskLevels').textContent=`${money(r.stop)} / ${money(r.target)}`;$('detailRegime').textContent=$('regime').textContent;$('trend').textContent=`${r.trend} · RSI ${r.rsi.toFixed(1)}`;$('detailEarn').textContent=r.earnings?`${r.earnings.date} · ${r.earnings.days} dagen`:'Onbekend — datum niet ontvangen';$('trackBtn').textContent=read(WATCH_KEY,[]).some(x=>x.symbol===r.symbol)?'Niet meer opvolgen':'Kandidaat opvolgen';$('details').scrollIntoView({behavior:'smooth',block:'start'})}
+function renderHistory(){const h=history();$('historyCount').textContent=`${h.length} scans`;$('history').innerHTML=h.slice(0,30).map(x=>`<tr><td>${x.day}</td><td>${x.regime}</td><td>${x.count}</td><td>${x.leaders?.map(y=>y.symbol).join(', ')||'—'}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Nog geen historiek.</td></tr>'}
+function renderWatch(){const w=read(WATCH_KEY,[]);$('watchlist').innerHTML=w.map(x=>{const current=rows.find(r=>r.symbol===x.symbol)?.price??x.price,change=100*(current/x.price-1);return `<tr><td><b>${x.symbol}</b></td><td>${x.date}</td><td>${money(x.price)}</td><td>${money(current)}</td><td class="${change>=0?'positive':'negative'}">${pct(change)}</td><td><button class="secondary untrack" data-s="${x.symbol}">Verwijder</button></td></tr>`}).join('')||'<tr><td colspan="6" class="muted">Nog geen kandidaten.</td></tr>';document.querySelectorAll('.untrack').forEach(b=>b.onclick=()=>{write(WATCH_KEY,read(WATCH_KEY,[]).filter(x=>x.symbol!==b.dataset.s));renderWatch();if(active?.symbol===b.dataset.s)showDetail(active)})}
+function track(){if(!active)return;let w=read(WATCH_KEY,[]);if(w.some(x=>x.symbol===active.symbol))w=w.filter(x=>x.symbol!==active.symbol);else w.unshift({symbol:active.symbol,date:dayKey(),price:active.price});write(WATCH_KEY,w);renderWatch();$('trackBtn').textContent=w.some(x=>x.symbol===active.symbol)?'Niet meer opvolgen':'Kandidaat opvolgen'}
+function runBacktest(){if(!rows.length){alert('Voer eerst een scan uit zodat historische koersreeksen lokaal beschikbaar zijn.');return}const capital=Math.max(1000,Number($('capital').value)||100000),risk=Number($('riskPct').value)/100,selected=rows.filter(x=>x.closes?.length>=200);if(!selected.length){alert('Onvoldoende historische koersdata voor de backtest.');return}const n=Math.min(...selected.map(x=>x.closes.length)),series=selected.map(x=>({...x,closes:x.closes.slice(-n)})),spy=(lastData?.spyCloses||[]).slice(-n);let cash=capital,positions=[],equityPeak=capital,maxDD=0,trades=0,wins=0;const dates=[];for(let t=0;t<n;t++){for(let i=positions.length-1;i>=0;i--){let p=positions[i],r=series.find(x=>x.symbol===p.symbol),px=r?.closes[t];if(!Number.isFinite(px))continue;p.last=px;if(px<=p.stop||px>=p.target){cash+=p.qty*px;trades++;if(px>p.entry)wins++;positions.splice(i,1)}}let eq=cash+positions.reduce((s,p)=>s+p.qty*p.last,0);equityPeak=Math.max(equityPeak,eq);maxDD=Math.max(maxDD,(equityPeak-eq)/equityPeak);const market=regimeOf(spy.slice(0,Math.min(spy.length,t))).state;if(market==='bullish'&&positions.length<5&&t>=200){const ranked=series.map(x=>{const c=x.closes.slice(0,t),sc=scoreOne(x.symbol,c,market);return sc&&{...sc,bar:x.closes[t]}}).filter(x=>x&&Number.isFinite(x.bar)&&x.score>=65).sort((a,b)=>b.score-a.score);for(const a of ranked){if(positions.length>=5||positions.some(p=>p.symbol===a.symbol))break;const entry=a.bar,stop=entry*(1-Math.max(.025,Math.min(.08,a.vol/100*2.5))),riskD=entry-stop,eqNow=cash+positions.reduce((s,p)=>s+p.qty*p.last,0),qty=Math.floor(Math.min(eqNow*risk/riskD,cash/entry));if(qty>0){cash-=qty*entry;positions.push({symbol:a.symbol,entry,stop,target:entry+2*riskD,qty,last:entry})}}}dates.push(cash+positions.reduce((s,p)=>s+p.qty*p.last,0))}const end=dates.at(-1)||capital,ret=(end/capital-1)*100,wr=trades?wins/trades*100:0;$('btEnd').textContent=money(end);$('btReturn').textContent=pct(ret);$('btDD').textContent=pct(-maxDD*100);$('btTrades').textContent=`${trades} / ${wr.toFixed(0)}%`;}
+$('updateBtn').onclick=()=>scan(true);$('earnFilter').onchange=()=>lastData&&render(lastData);$('trackBtn').onclick=track;$('backtestBtn').onclick=runBacktest;$('clearBtn').onclick=()=>{if(!confirm('Alle lokale scans, historiek en gevolgde kandidaten wissen?'))return;[CACHE_KEY,HIST_KEY,WATCH_KEY].forEach(k=>localStorage.removeItem(k));rows=[];lastData=null;$('results').innerHTML='<tr><td colspan="9">Lokale data gewist.</td></tr>';renderHistory();renderWatch();$('cachePill').textContent='Nog niet gescand';setStatus('Lokale scannerdata gewist.')};
+window.addEventListener('load',()=>{const c=read(CACHE_KEY,null);if(c){lastData=c;rows=c.rows||[];render(c);if(c.day===dayKey())setStatus('Vandaag al bijgewerkt. Opgeslagen resultaten worden gebruikt.');else scan(false)}else scan(false);if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{})});
+</script></body></html>
